@@ -34,9 +34,9 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const getProduct = async (productId:number)=> {
     const {data} = await api.get<Product>(`/products/${productId}`);
     
-    if(!data){
+    if(!data)
       return;
-    }
+    
     return data;
   }
 
