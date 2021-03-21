@@ -12,14 +12,6 @@ interface UpdateProductAmount {
   amount: number;
 }
 
-interface ProductProps {
-  id: number;
-  title: string;
-  price: number;
-  priceFormatted: string;
-  image: string;
-}
-
 interface CartContextData {
   cart: Product[];
   addProduct: (productId: number) => Promise<void>;
@@ -42,19 +34,35 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     return [];
   });
 
+  const getProduct = async (productId:number)=> {
+    const {data} = await api.get<Product>(`/products/${productId}`);
+    
+    if(!data){
+      return;
+    }
+    
+    return data;
+  }
+  
+
   const addProduct = async (productId: number) => {
     try { 
-      
-
-      const cartIndex = cart.findIndex((cart) => cart.id === productId);
-      
-      const { data: product } = await api.get<Product>(`/products/${productId}`);
-      if (cartIndex === -1) {
-          const newCart = [...cart, { ...product, amount: 1 }];
+      const productCard = cart.find(product => product.id === productId);
+      if(productCard){
+        updateProductAmount({
+          productId,
+          amount: productCard.amount+1
+        })
+      }else{
+        const data = await getProduct(productId);
+        if(data){
+          const newCart = [...cart, {
+            ...data,
+            amount: 1
+          }]
           localStorage.setItem('@RocketShoes:cart', JSON.stringify([...newCart]));
-          setCart([...newCart]);
-      } else {
-        updateProductAmount({ productId, amount: cart[cartIndex].amount + 1 });
+          setCart(newCart);
+        }
       }
     } catch {
       toast.error('Erro na adição do produto');
@@ -63,12 +71,16 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
   const removeProduct = async (productId: number) => {
     try {
-      const newCart = cart.filter((cart) => cart.id !== productId);
-      setCart([...newCart]);
-      localStorage.setItem('@RocketShoes:cart', JSON.stringify([...newCart]));
-      
+      const data = await getProduct(productId);
+      if(data && productId !== data.id){
+        throw new Error('O Produto não existe');
+      }else{
+        const newCart = cart.filter((cart) => cart.id !== productId);
+        setCart([...newCart]);
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify([...newCart]));
+      }
     } catch {
-      // TODO
+      toast('Erro ao remover produto');
     }
   };
 
