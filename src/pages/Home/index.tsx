@@ -2,16 +2,44 @@ import React, { useState, useEffect } from 'react';
 import { MdAddShoppingCart } from 'react-icons/md';
 
 import { ProductList } from './styles';
+import { api } from '../../services/api';
+import { formatPrice } from '../../util/format';
 import { useCart } from '../../hooks/useCart';
+import { Stock } from '../../types';
 
+interface Product {
+  id: number;
+  title: string;
+  price: number;
+  image: string;
+}
+
+interface ProductFormatted extends Product {
+  priceFormatted: string;
+}
 
 interface CartItemsAmount {
   [key: number]: number;
 }
 
 const Home = (): JSX.Element => {
+  const [products, setProducts] = useState<ProductFormatted[]>([]);
+  const { addProduct, cart } = useCart();
 
-  const { products, addProduct, cart } = useCart();
+  useEffect(() => {
+    async function loadProducts() {
+      const response = await api.get<ProductFormatted[]>('products');
+
+      const productsFormatted = response.data.map(product => ({
+          ...product,
+          priceFormatted: formatPrice(product.price)
+      }))
+
+      setProducts([...productsFormatted]);
+    }
+
+    loadProducts();
+  }, []);
 
   const cartItemsAmount = cart.reduce((sumAmount, product) => {
     if (product) {
@@ -21,7 +49,11 @@ const Home = (): JSX.Element => {
   }, {} as CartItemsAmount)
 
   async function handleAddProduct(id: number) {   
-    addProduct(id);
+    const { data: stock } = await api.get<Stock>(`/stock/${id}`);
+
+    if(stock.amount > 0){
+      addProduct(id);      
+    }
   }
 
   return (

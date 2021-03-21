@@ -2,7 +2,6 @@ import { createContext, ReactNode, useContext, useEffect, useState } from 'react
 import { toast } from 'react-toastify';
 import { api } from '../services/api';
 import { Product, Stock } from '../types';
-import { formatPrice } from './../util/format';
 
 interface CartProviderProps {
   children: ReactNode;
@@ -11,10 +10,6 @@ interface CartProviderProps {
 interface UpdateProductAmount {
   productId: number;
   amount: number;
-}
-
-interface ProductFormatted extends Product {
-  priceFormatted: string;
 }
 
 interface ProductProps {
@@ -26,33 +21,16 @@ interface ProductProps {
 }
 
 interface CartContextData {
-  products: ProductProps[];
   cart: Product[];
   addProduct: (productId: number) => Promise<void>;
   removeProduct: (productId: number) => void;
   updateProductAmount: ({ productId, amount }: UpdateProductAmount) => void;
-
 }
 
 const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
-  const [products, setProducts] = useState<ProductFormatted[]>([]);
 
-  useEffect(() => {
-    async function loadProducts() {
-      const response = await api.get<Product[]>('products');
-
-      const productsFormatted = response.data.map(product => ({
-          ...product,
-          priceFormatted: formatPrice(product.price)
-      }))
-
-      setProducts(productsFormatted);
-    }
-
-    loadProducts();
-  }, []);
 
   const [cart, setCart] = useState<Product[]>(() => {
     const storagedCart  = localStorage.getItem('@RocketShoes:cart');
@@ -66,18 +44,15 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
   const addProduct = async (productId: number) => {
     try { 
-      const { data: stock } = await api.get<Stock>(`/stock/${productId}`);
-      const { data: product } = await api.get<Product>(`/products/${productId}`);
+      
 
       const cartIndex = cart.findIndex((cart) => cart.id === productId);
+      
+      const { data: product } = await api.get<Product>(`/products/${productId}`);
       if (cartIndex === -1) {
-        if (stock.amount > 0) {
           const newCart = [...cart, { ...product, amount: 1 }];
           localStorage.setItem('@RocketShoes:cart', JSON.stringify([...newCart]));
           setCart([...newCart]);
-        } else {
-          toast.error('Quantidade solicitada fora de estoque');
-        }
       } else {
         updateProductAmount({ productId, amount: cart[cartIndex].amount + 1 });
       }
@@ -99,11 +74,12 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
   const updateProductAmount = async ({
     productId,
-    amount,
+    amount
   }: UpdateProductAmount) => {
     try {
-      if (amount <= 0)
+      if (amount <= 0){
         throw new Error('Erro na alteração de quantidade do produto');
+      }
 
       const { data: productOnStock } = await api.get<Stock>(`stock/${productId}`);
 
@@ -128,7 +104,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
   return (
     <CartContext.Provider
-      value={{ products, cart, addProduct, removeProduct, updateProductAmount }}
+      value={{ cart, addProduct, removeProduct, updateProductAmount }}
     >
       {children}
     </CartContext.Provider>

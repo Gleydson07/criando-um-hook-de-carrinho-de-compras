@@ -23,15 +23,17 @@ const Cart = (): JSX.Element => {
     ...product,
     priceFormatted: formatPrice(product.price)
   }))
-  // const total =
-  //   formatPrice(
-  //     cart.reduce((sumTotal, product) => {
-  //       // TODO
-  //     }, 0)
-  //   )
+  const total =
+    formatPrice(
+      cart.reduce((sumTotal, product) => {
+        sumTotal+=(product.price * product.amount);
+
+        return sumTotal;
+      }, 0)
+    )
 
   function handleProductIncrement(product: Product) {
-    // TODO
+    // updateProductAmount();
   }
 
   function handleProductDecrement(product: Product) {
@@ -85,14 +87,20 @@ const Cart = (): JSX.Element => {
                       <button
                         type="button"
                         data-testid="increment-product"
-                      // onClick={() => handleProductIncrement()}
+                        onClick={() => handleProductIncrement(product)}
                       >
                         <MdAddCircleOutline size={20} />
                       </button>
                     </div>
                   </td>
                   <td>
-                    <strong>R$ 359,80</strong>
+                    <strong>
+                      {
+                        new Intl.NumberFormat('pt-br', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(product.amount*product.price)
+                      }</strong>
                   </td>
                   <td>
                     <button
@@ -116,7 +124,7 @@ const Cart = (): JSX.Element => {
 
         <Total>
           <span>TOTAL</span>
-          <strong>R$ 359,80</strong>
+          <strong>{total}</strong>
         </Total>
       </footer>
     </Container>
