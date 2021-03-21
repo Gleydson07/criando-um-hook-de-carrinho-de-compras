@@ -49,11 +49,7 @@ const Home = (): JSX.Element => {
   }, []);
 
   async function handleAddProduct(id: number) {   
-    const { data: stock } = await api.get<Stock>(`/stock/${id}`);
-
-    if(stock.amount > 0){
       addProduct(id);      
-    }
   }
 
   return (
